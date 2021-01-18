@@ -11,7 +11,7 @@
 extern uint8_t is_master;
 
 enum layer_number {
-    _DVORAK = 0,
+   _DVORAK = 0,
   _QWERTY,
   _LOWER,
   _RAISE,
