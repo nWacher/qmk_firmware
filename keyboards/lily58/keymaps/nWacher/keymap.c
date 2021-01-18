@@ -175,10 +175,19 @@ void oled_task_user(void) {
     // If you want to change the display of OLED, you need to change here
     oled_write_ln(read_layer_state(), false);
     oled_write_ln(read_keylog(), false);
-    oled_write_ln(read_keylogs(), false);
+    //oled_write_ln(read_keylogs(), false);
+
+    if (keymap_config.swap_lalt_lgui){
+        oled_write_ln("Mode: Normal", false);
+    }
+    else {
+        oled_write_ln("Mode: Mac", false);
+    }
     //oled_write_ln(read_mode_icon(keymap_config.swap_lalt_lgui), false);
     //oled_write_ln(read_host_led_state(), false);
     //oled_write_ln(read_timelog(), false);
+    led_t led_usb_state = host_keyboard_led_state();
+    oled_write_ln("CPSLK", led_usb_state.caps_lock);
   } else {
     oled_write(read_logo(), false);
   }
