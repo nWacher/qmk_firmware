@@ -72,7 +72,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |------+------+------+------+------+------| TRNS |    | TRNS |------+------+------+------+------+------|
  * | TRNS | TRNS | TRNS | TRNS | TRNS | TRNS |-------|    |-------| [/{  |  ]/} |   \  |   {  |   }  |   |  |
  * `-----------------------------------------/       /     \      \-----------------------------------------'
- *                  | TRNS | TRNS | TRNS | / TRNS  /       \ TRNS  \  | ADJ  | Del  | TRNS |
+ *                  | TRNS | TRNS | TRNS | / TRNS  /       \ TRNS  \  |TRNS | Del  | TRNS |
  *                  |      |      |      |/       /         \      \ |      |      |      |
  *                  `----------------------------'           '------''--------------------'
  */
@@ -81,7 +81,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_ESC,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                      KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_GRV,
   KC_GRV, KC_EXLM,  KC_AT,   KC_HASH, KC_DLR,  KC_PERC,                   KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, KC_EQL,
   _______, _______, _______, _______, _______, _______, _______, _______, KC_LBRC, KC_RBRC, KC_BSLS, KC_LCBR, KC_RCBR, KC_PIPE,
-                             _______, _______, _______, _______, _______, MO(_ADJUST), KC_DEL,  _______
+                             _______, _______, _______, _______, _______, _______, KC_DEL,  _______
 ),
 /* RAISE
  * ,-----------------------------------------.                    ,-----------------------------------------.
@@ -93,7 +93,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |------+------+------+------+------+------| PSCRN|    |AltPSCR|------+------+------+------+------+------|
  * |  F7  |  F8  |  F9  | F10  | F11  | F12  |-------|    |-------|  +   | Home |CSpace| End  |   ]  |   \\  |
  * `-----------------------------------------/       /     \\      \\-----------------------------------------'
- *                  | TRNS | TRNS | ADJ  | / TRNS  /       \\ TRNS  \\  | TRNS | TRNS | TRNS |
+ *                  | TRNS | TRNS | TRNS | / TRNS  /       \\ TRNS  \\  | TRNS | TRNS | TRNS |
  *                  |      |      |      |/       /         \\      \\ |      |      |      |
  *                  `----------------------------'           '------''--------------------'
  * NO* = LCA(KC_NO), a modified KC_NO with no useful key action.
@@ -103,7 +103,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_TAB,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,                        KC_PGUP, CLeft,   KC_UP,   CRight,  KC_0,    _______,
   KC_LCTL, LCA(KC_NO), KC_F3,  KC_F4,   KC_F5,   KC_F6,                       KC_PGDN, KC_LEFT, KC_DOWN, KC_RGHT, KC_RGHT, XXXXXXX,
   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,   KC_PSCR, LALT(KC_PSCR),  KC_PLUS, KC_HOME, CSPC,    KC_END,  KC_RBRC, KC_BSLS,
-                             _______, _______, MO(_ADJUST),  _______, _______,  _______, _______, _______
+                             _______, _______, _______,  _______, _______,  _______, _______, _______
 ),
 /* ADJUST
  * ,-----------------------------------------.                    ,-----------------------------------------.
@@ -130,9 +130,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 // Keep ADJUST active while both LOWER and RAISE are held.
 layer_state_t layer_state_set_user(layer_state_t state) {
-  return update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);
+    return update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);
 }
-
 // Enable OLED_ENABLE = yes in rules.mk to compile this display code.
 #ifdef OLED_ENABLE
 
@@ -142,61 +141,56 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
   return rotation;
 }
 
+
 // OLED helper functions supplied by the Lily58 keymap's lib directory.
 const char *read_logo(void);
 void set_keylog(uint16_t keycode, keyrecord_t *record);
 const char *read_keylog(void);
 
-/*
-
 bool oled_task_user(void) {
-  if (is_keyboard_master()) {
-    // Show the highest active layer, including the selected base layout.
-    switch (get_highest_layer(layer_state | default_layer_state)) {
-      case _DVORAK:
-      case _QWERTY:
-        oled_write_ln("Layer: Base", false);
-        break;
-      case _LOWER:
-        oled_write_ln("Layer: Lower", false);
-        break;
-      case _RAISE:
-        oled_write_ln("Layer: Raise", false);
-        break;
-      case _ADJUST:
-        oled_write_ln("Layer: Adjust", false);
-        break;
-      default:
-        oled_write_ln("Layer: Unknown", false);
-        break;
-    }
+    oled_clear();
 
-    // Keep the original key logger, then show base layout and Alt/GUI mode.
-    oled_write_ln(read_keylog(), false);
-
-    const bool dvorak = get_highest_layer(default_layer_state) == _DVORAK;
-    const bool mac_mode = keymap_config.swap_lalt_lgui;
-    if (dvorak) {
-      oled_write_ln(mac_mode ? "Dvorak | Mac" : "Dvorak | Normal", false);
-    } else {
-      oled_write_ln(mac_mode ? "Qwerty | Mac" : "Qwerty | Normal", false);
-    }
-
-    // host_keyboard_led_state() reflects the host's actual Caps Lock LED state.
-    led_t led_usb_state = host_keyboard_led_state();
-    oled_write_ln(led_usb_state.caps_lock ? "Caps: ON" : "Caps: off", false);
-  } else {
-    oled_write(read_logo(), false);
-  }
-  return false;
-}
-*/
-
-bool oled_task_user(void) {
     if (is_keyboard_master()) {
-        oled_write_ln("MASTER", false);
+
+        // Active layer
+        switch (get_highest_layer(layer_state | default_layer_state)) {
+            case _DVORAK:
+            case _QWERTY:
+                oled_write_ln("Layer: Base", false);
+                break;
+            case _LOWER:
+                oled_write_ln("Layer: Lower", false);
+                break;
+            case _RAISE:
+                oled_write_ln("Layer: Raise", false);
+                break;
+            case _ADJUST:
+                oled_write_ln("Layer: Adjust", false);
+                break;
+            default:
+                oled_write_ln("Layer: Unknown", false);
+                break;
+        }
+
+        // Keylogger
+        oled_write_ln(read_keylog(), false);
+
+        // Base layout and modifier mode
+        const bool dvorak = get_highest_layer(default_layer_state) == _DVORAK;
+        const bool mac_mode = keymap_config.swap_lalt_lgui;
+
+        if (dvorak) {
+            oled_write_ln(mac_mode ? "Dvorak | Mac" : "Dvorak | Normal", false);
+        } else {
+            oled_write_ln(mac_mode ? "Qwerty | Mac" : "Qwerty | Normal", false);
+        }
+
+        // Caps Lock status
+        led_t led_usb_state = host_keyboard_led_state();
+        oled_write_ln(led_usb_state.caps_lock ? "Caps: ON" : "Caps: off", false);
+
     } else {
-        oled_write_ln("SLAVE", false);
+        oled_write(read_logo(), false);
     }
 
     return false;
